@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Same Game</title>
+  <meta name="description" content="Classic Same Game puzzle. Clear groups of adjacent same-color blocks for exponential score. 3 difficulties, undo." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-left">
+      <h1 class="app-title" data-i18n="title">Same Game</h1>
+      <p class="app-subtitle" data-i18n="subtitle">Click groups of same-color blocks to score</p>
+    </div>
+
+    <div class="header-controls">
+      <!-- Difficulty -->
+      <div class="control-group">
+        <label class="control-label" for="difficulty-select" data-i18n="difficulty">Difficulty</label>
+        <select id="difficulty-select" class="control-select">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+
+      <!-- Scores -->
+      <div class="score-group">
+        <div class="score-block">
+          <span class="score-label" data-i18n="score">Score</span>
+          <span class="score-value" id="score-value">0</span>
+        </div>
+        <div class="score-block">
+          <span class="score-label" data-i18n="best">Best</span>
+          <span class="score-value" id="best-value">0</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="btn-group">
+        <button id="undo-btn" class="btn btn-secondary" data-i18n="undo">Undo</button>
+        <button id="new-btn"  class="btn btn-primary"   data-i18n="newGame">New Game</button>
+      </div>
+
+      <!-- Meta buttons -->
+      <div class="meta-group">
+        <button id="theme-toggle" class="btn btn-icon">Dark</button>
+        <button id="lang-toggle"  class="btn btn-icon">JA</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────── -->
+  <main class="app-main">
+    <!-- Preview / hint bar -->
+    <div class="status-bar">
+      <span id="preview" class="preview-score"></span>
+      <span id="hint" class="hint-text">Click groups of 2+ adjacent same-color blocks</span>
+    </div>
+
+    <!-- Game grid -->
+    <div id="game-grid" class="game-grid"></div>
+  </main>
+
+  <!-- ── Game-over / cleared overlay ──────────────────────── -->
+  <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="overlay-card">
+      <h2 id="overlay-title" class="overlay-title"></h2>
+      <p  id="overlay-msg"   class="overlay-msg"></p>
+      <p  id="overlay-score" class="overlay-score"></p>
+      <button id="overlay-play-btn" class="btn btn-primary btn-lg" data-i18n="playAgain">Play Again</button>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
