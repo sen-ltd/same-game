@@ -107,6 +107,11 @@ function updateScoreDisplay() {
 // ---------------------------------------------------------------------------
 // Grid rendering
 // ---------------------------------------------------------------------------
+/**
+ * Full re-render: destroys and recreates all cells. Used when the grid
+ * structure changes (new game, difficulty change, undo). NOT used during
+ * normal play because innerHTML=''/appendChild causes a whole-grid flicker.
+ */
 function renderGrid() {
   grid.innerHTML = '';
   const def = DIFFICULTIES[difficulty];
@@ -127,11 +132,6 @@ function renderGrid() {
         cell.classList.add('empty');
       }
 
-      if (highlighted) {
-        const inGroup = highlighted.some(([hr, hc]) => hr === r && hc === c);
-        if (inGroup) cell.classList.add('highlight');
-      }
-
       cell.addEventListener('click',    onCellClick);
       cell.addEventListener('mouseenter', onCellHover);
       cell.addEventListener('mouseleave', onCellLeave);
@@ -140,6 +140,45 @@ function renderGrid() {
       grid.appendChild(cell);
     }
   }
+}
+
+/**
+ * In-place update: reuses existing cell DOM elements, only mutating their
+ * class lists. Used during a play() move so we don't flash the whole grid.
+ * Returns an array of cells whose contents changed (for fall animation).
+ */
+function updateGridInPlace() {
+  const cells = grid.children;
+  const changed = [];
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      const cell = cells[r * state.cols + c];
+      if (!cell) continue;
+      const v = state.board[r][c];
+      const oldColorClass = [...cell.classList].find(x => /^c\d$/.test(x)) || null;
+      const wasEmpty = cell.classList.contains('empty');
+      const newColorClass = v !== null ? COLOR_CLASSES[v] : null;
+      const nowEmpty = v === null;
+
+      // Remove all transient/content classes
+      cell.classList.remove('empty', 'c0', 'c1', 'c2', 'c3', 'c4', 'highlight', 'popping', 'fall');
+
+      if (nowEmpty) {
+        cell.classList.add('empty');
+      } else {
+        cell.classList.add(newColorClass);
+      }
+
+      // A cell "changed" when its visible content is different
+      const contentChanged =
+        wasEmpty !== nowEmpty ||
+        (!nowEmpty && oldColorClass !== newColorClass);
+      if (contentChanged && !nowEmpty) {
+        changed.push(cell);
+      }
+    }
+  }
+  return changed;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +280,8 @@ function doPlay(r, c) {
     }
   });
 
-  // Phase 2: after pop completes, update state, re-render, animate fall
+  // Phase 2: after pop completes, update state and in-place refresh.
+  // In-place update avoids the whole-grid flash caused by innerHTML=''.
   setTimeout(() => {
     state = play(state, r, c);
     highlighted = null;
@@ -249,12 +289,10 @@ function doPlay(r, c) {
     previewEl.textContent = '';
 
     updateScoreDisplay();
-    renderGrid();
-    animateFall();
+    const changedCells = updateGridInPlace();
+    animateFallCells(changedCells);
 
-    // Brief grace period to ignore mouseenter on freshly-rendered cells
-    // (the mouse is still parked over the same screen position)
-    setTimeout(() => { isAnimating = false; }, 60);
+    isAnimating = false;
 
     if (state.cleared) {
       saveBest(state.score);
@@ -271,11 +309,15 @@ function doPlay(r, c) {
 // ---------------------------------------------------------------------------
 // Fall animation
 // ---------------------------------------------------------------------------
-function animateFall() {
-  grid.querySelectorAll('.cell:not(.empty)').forEach((cell, i) => {
-    cell.style.animationDelay = `${(i % state.cols) * 15}ms`;
+function animateFallCells(cells) {
+  cells.forEach((cell) => {
+    const c = +cell.dataset.col;
+    cell.style.animationDelay = `${c * 15}ms`;
     cell.classList.add('fall');
-    cell.addEventListener('animationend', () => cell.classList.remove('fall'), { once: true });
+    cell.addEventListener('animationend', () => {
+      cell.classList.remove('fall');
+      cell.style.animationDelay = '';
+    }, { once: true });
   });
 }
 
