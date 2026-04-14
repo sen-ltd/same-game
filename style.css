@@ -320,6 +320,12 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
   animation: fall 180ms ease both;
 }
 
+.cell.popping {
+  animation: pop 180ms ease both;
+  pointer-events: none;
+  z-index: 3;
+}
+
 /* ── Overlay ─────────────────────────────────────────────── */
 .overlay {
   position: fixed;

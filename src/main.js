@@ -38,6 +38,7 @@ let lang         = localStorage.getItem('sg-lang')  || 'en';
 let theme        = localStorage.getItem('sg-theme') || 'light';
 let difficulty   = localStorage.getItem('sg-diff')  || 'easy';
 let highlighted  = null; // array of [row,col] currently highlighted, or null
+let isAnimating  = false; // true while a removal animation is playing
 
 // ---------------------------------------------------------------------------
 // DOM references (set after DOMContentLoaded)
@@ -170,6 +171,7 @@ function applyHighlight(points) {
 // Event handlers
 // ---------------------------------------------------------------------------
 function onCellHover(e) {
+  if (isAnimating) return;
   if (state.cleared || !state.hasNext) return;
   const r = +e.currentTarget.dataset.row;
   const c = +e.currentTarget.dataset.col;
@@ -186,11 +188,12 @@ function onCellHover(e) {
 }
 
 function onCellLeave() {
-  // Only clear if not in the middle of a touch sequence
+  if (isAnimating) return;
   clearHighlight();
 }
 
 function onCellClick(e) {
+  if (isAnimating) return;
   if (state.cleared || !state.hasNext) return;
   const r = +e.currentTarget.dataset.row;
   const c = +e.currentTarget.dataset.col;
@@ -221,32 +224,48 @@ function onCellTouch(e) {
 }
 
 function doPlay(r, c) {
-  const prevScore = state.score;
-  const newState  = play(state, r, c);
-  if (newState === state) return; // no match
+  // Find the matched group on the CURRENT board so we can animate removal
+  const points = match(state.board, r, c);
+  if (!points) return;
 
-  state = newState;
-  highlighted = null;
-  touchHighlightedCell = null;
-  previewEl.textContent = '';
+  isAnimating = true;
 
-  updateScoreDisplay();
-  renderGrid();
+  // Phase 1: pop-out animation on the matched cells (in place)
+  const popDurationMs = 180;
+  grid.querySelectorAll('.cell').forEach(cell => {
+    const cr = +cell.dataset.row;
+    const cc = +cell.dataset.col;
+    if (points.some(([pr, pc]) => pr === cr && pc === cc)) {
+      cell.classList.remove('highlight');
+      cell.classList.add('popping');
+    }
+  });
 
-  // Animation: flash removed cells (they are now gone; we recreate the grid
-  // immediately so we trigger a CSS animation on newly rendered cells instead)
-  // Cells that are new (just fell) get the `fall` animation class.
-  animateFall();
+  // Phase 2: after pop completes, update state, re-render, animate fall
+  setTimeout(() => {
+    state = play(state, r, c);
+    highlighted = null;
+    touchHighlightedCell = null;
+    previewEl.textContent = '';
 
-  if (state.cleared) {
-    saveBest(state.score);
-    showOverlay(true);
-    return;
-  }
-  if (!state.hasNext) {
-    saveBest(state.score);
-    showOverlay(false);
-  }
+    updateScoreDisplay();
+    renderGrid();
+    animateFall();
+
+    // Brief grace period to ignore mouseenter on freshly-rendered cells
+    // (the mouse is still parked over the same screen position)
+    setTimeout(() => { isAnimating = false; }, 60);
+
+    if (state.cleared) {
+      saveBest(state.score);
+      showOverlay(true);
+      return;
+    }
+    if (!state.hasNext) {
+      saveBest(state.score);
+      showOverlay(false);
+    }
+  }, popDurationMs);
 }
 
 // ---------------------------------------------------------------------------
