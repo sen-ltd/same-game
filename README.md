@@ -75,3 +75,10 @@ The game logic in `same-game.js` is a faithful port of the reference `SameGame` 
 ## License
 
 MIT © 2026 [SEN LLC (SEN 合同会社)](https://sen.ltd)
+
+<!-- sen-publish:links -->
+## Links
+
+- 🌐 Demo: https://sen.ltd/portfolio/same-game/
+- 📝 dev.to: https://dev.to/sendotltd/same-game-in-vanilla-js-flood-fill-gravity-and-column-compression-1j8g
+<!-- /sen-publish:links -->
